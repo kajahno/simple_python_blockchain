@@ -1,0 +1,6 @@
+.vscode
+blockchain.txt
+blockchain_clean.txt
+__pycache__
+*.pyc
+.venv
