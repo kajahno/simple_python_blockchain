@@ -1,6 +1,9 @@
 import hashlib
 import json
 
+# only export these two functions and nothing else. THis only works when you import with wildcard -> from utility.hash_util import *
+# __all__ = ['hash256_string', 'hash_block']
+
 def hash256_string(string):
     return hashlib.sha256(string).hexdigest()
 

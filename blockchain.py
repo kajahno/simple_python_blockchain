@@ -6,9 +6,9 @@ import pickle
 
 from block import Block
 from transaction import Transaction
-from verification import Verification
-from hash_util import hash_block
-
+from utility.hash_util import hash_block
+from utility.verification import Verification
+from wallet import Wallet
 
 MINING_REWARD = 10
 
@@ -47,6 +47,7 @@ class Blockchain:
                 for b in blockchain:
                     transactions = [ Transaction(
                                         sender = t['sender'],
+                                        signature = t['signature'],
                                         recipient=t['recipient'],
                                         amount=t['amount']) for t in b['transactions'] ]
 
@@ -61,6 +62,7 @@ class Blockchain:
 
                 self.__open_transactions = [ Transaction(
                                         sender=t['sender'],
+                                        signature = t['signature'],
                                         recipient=t['recipient'],
                                         amount=t['amount']) for t in open_transactions ]
 
@@ -95,7 +97,6 @@ class Blockchain:
         return proof
 
 
-
     def get_balance(self):
         participant = self.hosting_node
         transactions_sent = [ [ transaction.amount for transaction in block.transactions if transaction.sender == participant] for block in self.__chain ]
@@ -123,13 +124,18 @@ class Blockchain:
         return self.__chain[-1]
 
 
-    def add_transaction(self, sender, recipient, amount=1.0, reward_transaction=False):
+    def add_transaction(self, sender, recipient, amount, signature, reward_transaction=False):
+        if self.hosting_node == None:
+            return False
+
         transaction = Transaction(
                         sender=sender,
                         recipient=recipient,
-                        amount=amount)
+                        amount=amount,
+                        signature=signature)
 
         if not Verification.verify_transaction(transaction, self.get_balance):
+            print('transaction not valid!')
             if reward_transaction:
                 print('reward transaction detected')
             else:
@@ -141,21 +147,28 @@ class Blockchain:
 
 
     def mine_block(self):
+        if self.hosting_node == None:
+            return False
+
         last_bock = self.__chain[-1]
         hash_val = hash_block(last_bock)
 
         proof_of_work_number = self.proof_of_work()
-        print(hash_val)
+        # print(hash_val)
         # add_transaction(sender='MINING', recipient=owner, amount=MINING_REWARD, reward_transaction=True)
 
         reward_transaction = Transaction(
                                 sender='MINING',
                                 recipient=self.hosting_node,
-                                amount=MINING_REWARD)
+                                amount=MINING_REWARD,
+                                signature = '')
 
         copied_transactions = self.__open_transactions[:]
-        copied_transactions.append(reward_transaction)
+        if not all([Wallet.verify_transaction(tx) for tx in copied_transactions]):
+            print('Some transaction are invalid!')
+            return False
 
+        copied_transactions.append(reward_transaction)
         block = Block(index=len(self.__chain),
                     previous_hash=hash_val,
                     transactions=copied_transactions,
@@ -164,5 +177,3 @@ class Blockchain:
         self.__open_transactions = []
         self.save_data()
         return True
-
-

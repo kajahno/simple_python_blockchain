@@ -1,12 +1,14 @@
-from hash_util import hash256_string, hash_block
+"""Provides verifiaction helper methods."""
 
+from utility.hash_util import hash256_string, hash_block
+from wallet import Wallet
 
 class Verification:
 
     @staticmethod
     def valid_proof(transactions, last_hash, proof_of_work_number):
         guess_str = str([t.to_ordered_dict() for t in transactions]) + str(last_hash) + str(proof_of_work_number)
-        print(f"guess_str={guess_str}.")
+        # print(f"guess_str={guess_str}.")
         guess_str = guess_str.encode()
         guess_hash = hash256_string(guess_str)
         # print(guess_hash)
@@ -30,7 +32,7 @@ class Verification:
     @staticmethod
     def verify_transaction(transaction, get_balance):
         sender_balancer = get_balance()
-        return sender_balancer >= transaction.amount
+        return sender_balancer >= transaction.amount and Wallet.verify_transaction(transaction)
 
     @classmethod
     def verify_transactions(cls, open_transactions, get_balance):
